@@ -21,7 +21,7 @@ To use *find-deps* from the command line, create an alias in your
 
 #+BEGIN_SRC clojure
 :find-deps {:extra-deps {find-deps {:git/url "https://github.com/hagmonk/find-deps"
-                                           :sha     "04329744872890711dbba8939a16e9987dd33bb3"}}
+                                    :sha     "6311b3161c3c1e5466a3bc7515809e983b5da35b"}}
             :main-opts  ["-m" "find-deps.core"]}
 #+END_SRC
 
