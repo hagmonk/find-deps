@@ -10,7 +10,14 @@ respository APIs. It also factors in the freshness of the dependencies, and the
 popularity of the dependency's group ID. We hope this results in a near-perfect
 suggestion every time!
 
+See the Future section below for some ideas around where this can be taken. In
+particular, it would be great to enable searching for ~deps.edn~ files on github
+...
+
 *** Changelog
+- 2018-06-17
+  - change -S flag to -s to avoid conflict with tools.deps cli
+  - enable piping of invocations together to produced merged deps.edn map
 - 2018-06-16
   - Initial commit
 
@@ -21,7 +28,7 @@ To use *find-deps* from the command line, create an alias in your
 
 #+BEGIN_SRC clojure
 :find-deps {:extra-deps {find-deps {:git/url "https://github.com/hagmonk/find-deps"
-                                    :sha     "6311b3161c3c1e5466a3bc7515809e983b5da35b"}}
+                                    :sha     "834283f77b217e6134cbf6e5f0c3208f6e3959d2"}}
             :main-opts  ["-m" "find-deps.core"]}
 #+END_SRC
 
@@ -34,7 +41,7 @@ find-deps
 Usage: [options*] [search-strings*]
 
 Options:
-  -S, --sources SOURCES  :clojars:mvn  Concatenated source types
+  -s, --sources SOURCES  :clojars:mvn  Concatenated source types
   -R, --rank METHOD      :fuzzy        Ranking method - :fuzzy, :regex
   -F, --format FORMAT    :deps         Format for printing results - :deps, :merged, :table
   -l, --limit NUM        1             Limit per-search results to NUM
@@ -56,7 +63,7 @@ clj -A:find-deps http-kit
 Search for multiple dependencies:
 
 #+BEGIN_SRC sh
-clj -m find-deps.core http-kit tools.logging priority-map
+clj -A:find-deps http-kit tools.logging priority-map
 #+END_SRC
 
 #+BEGIN_SRC clojure
@@ -66,10 +73,26 @@ clj -m find-deps.core http-kit tools.logging priority-map
   org.clojure/data.priority-map {:mvn/version "0.0.9"}}}
 #+END_SRC
 
+Chain together multiple invocations using different query arguments:
+
+#+BEGIN_SRC sh
+clj -A:find-deps -s:mvn roaringbitmap | clj -A:find-deps -s:clojars -R:regex -l 5 io.pedestal
+#+END_SRC
+
+#+BEGIN_SRC clojure
+{:deps
+ {org.roaringbitmap/RoaringBitmap  {:mvn/version "0.7.13"},
+  io.pedestal/pedestal.jetty       {:mvn/version "0.5.3"},
+  io.pedestal/pedestal.tomcat      {:mvn/version "0.5.3"},
+  io.pedestal/pedestal.log         {:mvn/version "0.5.3"},
+  io.pedestal/pedestal.service     {:mvn/version "0.5.3"},
+  io.pedestal/pedestal.interceptor {:mvn/version "0.5.3"}}}
+#+END_SRC
+
 Merge the search results into the current project's ~deps.edn~:
 
 #+BEGIN_SRC sh
-clj -m find-deps.core -F:merged http-kit tools.logging priority-map
+clj -A:find-deps -F:merged http-kit tools.logging priority-map
 #+END_SRC
 
 #+BEGIN_SRC clojure
@@ -96,7 +119,7 @@ clj -m find-deps.core -F:merged http-kit tools.logging priority-map
 String search returning multiple matches in a table:
 
 #+BEGIN_SRC sh
-clj -m find-deps.core -F:table -l 10 "apache kafka"
+clj -A:find-deps -F:table -l 10 "apache kafka"
 
 |                              :lib | :version |
 |-----------------------------------+----------|
