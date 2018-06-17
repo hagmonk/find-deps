@@ -4,7 +4,8 @@
             [find-deps.search :as search]
             [find-deps.rank :as rank]
             [clojure.string :as str]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io])
+  (:import (java.io InputStream)))
 
 (Thread/setDefaultUncaughtExceptionHandler
  (reify Thread$UncaughtExceptionHandler
@@ -12,11 +13,45 @@
      (prn (Throwable->map ex))
      (System/exit -1))))
 
+;; borrowed from clj-pid
+(def pid
+  (memoize
+   (fn []
+     (-> (java.lang.management.ManagementFactory/getRuntimeMXBean)
+         (.getName)
+         (str/split #"@")
+         (first)))))
+
+(defn debug [& args]
+  (binding [*out* *err*]
+    (apply prn (cons (str (pid)) args))
+    (flush)))
+
+(defn stream-available?
+  [^InputStream stream]
+  (pos? (.available stream)))
+
+(defn get-deps-edn-stream
+  []
+  (if (stream-available? System/in)
+    (with-open [r (java.io.PushbackReader. (io/reader *in*))]
+      (clojure.edn/read r))
+    {:deps {}}))
+
+(defn get-deps-edn-file
+  ([] (get-deps-edn-file "deps.edn"))
+  ([path]
+   (let [input (if (stream-available? System/in)
+                 *in*
+                 (io/as-file path))]
+     (with-open [r (java.io.PushbackReader. (io/reader input))]
+       (clojure.edn/read r)))))
+
 (def cli-options
-  [["-S"
+  [["-s"
     "--sources=SOURCES"
     "Concatenated source types"
-    :parse-fn parse-kws
+    :parse-fn (comp vec parse-kws)
     :default [:clojars :mvn]
     :default-desc ":clojars:mvn"]
 
@@ -76,7 +111,6 @@
   (println msg)
   (System/exit status))
 
-
 (defmulti apply-opts (fn [opt vals ctx] opt))
 
 (defmethod apply-opts :sources
@@ -103,9 +137,11 @@
                   vals
                   (apply interleave))]
     (case fmt
-      :deps   {:deps (into {} deps)}
+      :deps   (merge-with merge
+                          (get-deps-edn-stream)
+                          {:deps (into {} deps)})
       :merged (merge-with merge
-                          (read-string (slurp (io/file "deps.edn")))
+                          (get-deps-edn-file)
                           {:deps (into {} deps)}) 
       :table  (clojure.pprint/print-table
                (map (fn [[k v]]
@@ -185,7 +221,10 @@
 
 (defn -main
   [& args]
-
+  ;; stuff something in to stdout so other invocations connected with unix pipes
+  ;; detect that they have a stdin stream available.
+  (print "")
+  (flush)
   (let [{:keys [search-strings options exit-message ok?]} (validate-args args)]
     #_(clojure.pprint/pprint (conj (vec search-strings) options))
     (if exit-message
@@ -194,4 +233,5 @@
         (let [result (apply query* (conj (vec search-strings) options))]
           (when-not (some-> options :format #{:table})
             (clojure.pprint/pprint result)))))
-    (shutdown-agents)))
+    (shutdown-agents)
+    (flush)))
