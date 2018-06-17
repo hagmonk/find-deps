@@ -1,0 +1,147 @@
+#+TITLE: find-deps
+
+*** What?
+
+*find-deps* helps you quickly find dependencies via the Clojars and Maven search
+APIs. Use it via the command line, or from the REPL.
+
+*find-deps* utilizes [[http://yomguithereal.github.io/clj-fuzzy][clj-fuzzy]] to refine the search results returned from
+respository APIs. It also factors in the freshness of the dependencies, and the
+popularity of the dependency's group ID. We hope this results in a near-perfect
+suggestion every time!
+
+*** Changelog
+- 2018-06-16
+  - Initial commit
+
+*** CLI Usage
+
+To use *find-deps* from the command line, create an alias in your
+~/.clojure/deps.edn map:
+
+#+BEGIN_SRC clojure
+:find-deps {:extra-deps {find-deps {:git/url "https://github.com/hagmonk/find-deps"
+                                           :sha     "04329744872890711dbba8939a16e9987dd33bb3"}}
+            :main-opts  ["-m" "find-deps.core"]}
+#+END_SRC
+
+You can invoke *find-deps* with ~-h~ to see the supported options:
+
+#+BEGIN_SRC sh
+% clj -A:find-deps -h
+find-deps
+
+Usage: [options*] [search-strings*]
+
+Options:
+  -S, --sources SOURCES  :clojars:mvn  Concatenated source types
+  -R, --rank METHOD      :fuzzy        Ranking method - :fuzzy, :regex
+  -F, --format FORMAT    :deps         Format for printing results - :deps, :merged, :table
+  -l, --limit NUM        1             Limit per-search results to NUM
+  -h, --help
+#+END_SRC
+
+**** Examples
+
+Search for a dependency like http-kit:
+
+#+BEGIN_SRC sh
+clj -A:find-deps http-kit
+#+END_SRC
+
+#+BEGIN_SRC clojure
+{:deps {http-kit/http-kit {:mvn/version "2.3.0"}}}
+#+END_SRC
+
+Search for multiple dependencies:
+
+#+BEGIN_SRC sh
+clj -m find-deps.core http-kit tools.logging priority-map
+#+END_SRC
+
+#+BEGIN_SRC clojure
+{:deps
+ {http-kit/http-kit {:mvn/version "2.3.0"},
+  org.clojure/tools.logging {:mvn/version "0.5.0-alpha"},
+  org.clojure/data.priority-map {:mvn/version "0.0.9"}}}
+#+END_SRC
+
+Merge the search results into the current project's ~deps.edn~:
+
+#+BEGIN_SRC sh
+clj -m find-deps.core -F:merged http-kit tools.logging priority-map
+#+END_SRC
+
+#+BEGIN_SRC clojure
+{:paths ["src"],
+ :deps
+ {org.clojure/clojure           {:mvn/version "1.9.0"},
+  org.clojure/tools.logging     {:mvn/version "0.5.0-alpha"},
+  org.clojure/spec.alpha        {:mvn/version "0.1.143"},
+  clj-fuzzy                     {:mvn/version "0.4.1"},
+  http-kit                      {:mvn/version "2.3.0"},
+  tools.deps.alpha
+  {:git/url "https://github.com/clojure/tools.deps.alpha",
+   :sha     "884d7ae5b9c228ff795e4385291708102f1cd46d"},
+  metosin/jsonista              {:mvn/version "0.1.1"},
+  org.clojure/data.priority-map {:mvn/version "0.0.9"},
+  inflections                   {:mvn/version "0.13.0"},
+  http-kit/http-kit             {:mvn/version "2.3.0"}}
+;; ... snip
+ }
+
+
+#+END_SRC
+
+String search returning multiple matches in a table:
+
+#+BEGIN_SRC sh
+clj -m find-deps.core -F:table -l 10 "apache kafka"
+
+|                              :lib | :version |
+|-----------------------------------+----------|
+|      org.apache.kafka/kafka-tools |    1.1.0 |
+|      org.apache.kafka/kafka_2.9.2 |  0.8.2.2 |
+|      org.apache.kafka/kafka_2.9.1 |  0.8.2.2 |
+|      org.apache.kafka/kafka_2.8.0 |  0.8.1.1 |
+|      org.apache.kafka/kafka_2.8.2 |    0.8.1 |
+|    org.apache.hadoop/hadoop-kafka |    3.1.0 |
+|    org.apache.kafka/kafka-streams |    1.1.0 |
+|    org.apache.kafka/kafka-clients |    1.1.0 |
+|   org.apache.kafka/kafka-examples |    1.1.0 |
+| org.apache.kafka/kafka-perf_2.8.0 |  0.8.1.1 |
+#+END_SRC
+
+*** API
+
+The ~find-deps.core~ namespace contains a number of helpers you can use from the
+REPL. Assuming you have an alias for rebel-readline:
+
+#+BEGIN_SRC sh
+clj -A:rebel
+[Rebel readline] Type :repl/help for online help info
+user=> (use 'find-deps.core)
+nil
+user=> (print-deps "http-kit")
+
+|              :lib | :version |
+|-------------------+----------|
+| http-kit/http-kit |    2.3.0 |
+nil
+user=> (deps "http-kit")
+{:deps #:http-kit{http-kit #:mvn{:version "2.3.0"}}}
+#+END_SRC
+
+See the ~find-deps.core~ namespace for more helpers.
+
+*** Future
+- [ ] search github for deps.edn files
+- [ ] search github for project.clj files
+  - [ ] page rank deps based on dependency graph
+  - [ ] recommended other dependencies based on clustering
+- [ ] incorporate download counts into weighting factor
+- [ ] support writing directly into deps.edn
+- [ ] support ~add-lib~
+- [ ] add validation support to cli parser
+
+
