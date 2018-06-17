@@ -5,10 +5,10 @@
 *find-deps* helps you quickly find dependencies via the Clojars and Maven search
 APIs. Use it via the command line, or from the REPL.
 
-*find-deps* utilizes [[http://yomguithereal.github.io/clj-fuzzy][clj-fuzzy]] to refine the search results returned from
-respository APIs. It also factors in the freshness of the dependencies, and the
-popularity of the dependency's group ID. We hope this results in a near-perfect
-suggestion every time!
+*find-deps* utilizes [[http://yomguithereal.github.io/clj-fuzzy][clj-fuzzy]] to 
+refine the search results returned from repository APIs. It also factors in the 
+freshness of the dependencies, and the popularity of the dependency's group ID. 
+We hope this results in a near-perfect suggestion every time!
 
 See the Future section below for some ideas around where this can be taken. In
 particular, it would be great to enable searching for ~deps.edn~ files on github
