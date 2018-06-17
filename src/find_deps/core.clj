@@ -41,11 +41,12 @@
 (defn get-deps-edn-file
   ([] (get-deps-edn-file "deps.edn"))
   ([path]
-   (let [input (if (stream-available? System/in)
-                 *in*
-                 (io/as-file path))]
-     (with-open [r (java.io.PushbackReader. (io/reader input))]
-       (clojure.edn/read r)))))
+   (clojure.edn/read-string (slurp path))))
+
+(defn write-deps-edn
+  [deps stream]
+  (binding [*print-namespace-maps* false]
+    (.write stream (with-out-str (clojure.pprint/pprint deps)))))
 
 (def cli-options
   [["-s"
@@ -64,7 +65,7 @@
    
    ["-F"
     "--format=FORMAT"
-    "Format for printing results - :deps, :merged, :table"
+    "Format for printing results - :deps, :merge, :table, :save"
     :parse-fn (comp first parse-kws) 
     :default :deps
     :default-desc ":deps"]
@@ -133,19 +134,25 @@
 
 (defmethod apply-opts :format
   [_ fmt ctx]
-  (let [deps (->> ctx
-                  vals
-                  (apply interleave))]
+  (let [deps     (->> ctx
+                      vals
+                      (apply interleave))
+        merge-fn #(merge-with merge
+                              (get-deps-edn-file)
+                              (get-deps-edn-stream)
+                              {:deps (into {} %)})]
     (case fmt
-      :deps   (merge-with merge
-                          (get-deps-edn-stream)
-                          {:deps (into {} deps)})
-      :merged (merge-with merge
-                          (get-deps-edn-file)
-                          {:deps (into {} deps)}) 
-      :table  (clojure.pprint/print-table
-               (map (fn [[k v]]
-                      {:lib k :version (:mvn/version v)}) deps)))))
+      :deps  (merge-with merge
+                         (get-deps-edn-stream)
+                         {:deps (into {} deps)})
+      :merge (merge-fn deps)
+      :save  (let [new-deps (merge-fn deps)]
+               (with-open [w (io/writer "deps.edn")]
+                 (write-deps-edn new-deps w))
+               new-deps)
+      :table (clojure.pprint/print-table
+              (map (fn [[k v]]
+                     {:lib k :version (:mvn/version v)}) deps)))))
 
 (defn query*
   "Perform query"
@@ -232,6 +239,6 @@
       (binding [*print-namespace-maps* false]
         (let [result (apply query* (conj (vec search-strings) options))]
           (when-not (some-> options :format #{:table})
-            (clojure.pprint/pprint result)))))
+            (write-deps-edn result *out*)))))
     (shutdown-agents)
     (flush)))

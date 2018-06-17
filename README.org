@@ -5,19 +5,29 @@
 *find-deps* helps you quickly find dependencies via the Clojars and Maven search
 APIs. Use it via the command line, or from the REPL.
 
-*find-deps* utilizes [[http://yomguithereal.github.io/clj-fuzzy][clj-fuzzy]] to 
-refine the search results returned from repository APIs. It also factors in the 
-freshness of the dependencies, and the popularity of the dependency's group ID. 
-We hope this results in a near-perfect suggestion every time!
+*find-deps* utilizes [[http://yomguithereal.github.io/clj-fuzzy][clj-fuzzy]] to refine the search results returned from
+repository APIs. It also factors in the freshness of the dependencies, and the
+popularity of the dependency's group ID. We hope this results in a near-perfect
+suggestion every time!
 
 See the Future section below for some ideas around where this can be taken. In
 particular, it would be great to enable searching for ~deps.edn~ files on github
 ...
 
+*** TL;DR
+
+Add a dependency to your current deps.edn as easily as this:
+
+#+BEGIN_SRC sh
+clj -A:find-deps -F:save priority-map
+#+END_SRC
+
 *** Changelog
 - 2018-06-17
   - change -S flag to -s to avoid conflict with tools.deps cli
   - enable piping of invocations together to produced merged deps.edn map
+  - enable saving of deps.edn map with format :save
+  - renamed :merged to :merge
 - 2018-06-16
   - Initial commit
 
@@ -43,7 +53,7 @@ Usage: [options*] [search-strings*]
 Options:
   -s, --sources SOURCES  :clojars:mvn  Concatenated source types
   -R, --rank METHOD      :fuzzy        Ranking method - :fuzzy, :regex
-  -F, --format FORMAT    :deps         Format for printing results - :deps, :merged, :table
+  -F, --format FORMAT    :deps         Format for printing results - :deps, :merge, :table, :save
   -l, --limit NUM        1             Limit per-search results to NUM
   -h, --help
 #+END_SRC
@@ -89,10 +99,11 @@ clj -A:find-deps -s:mvn roaringbitmap | clj -A:find-deps -s:clojars -R:regex -l 
   io.pedestal/pedestal.interceptor {:mvn/version "0.5.3"}}}
 #+END_SRC
 
-Merge the search results into the current project's ~deps.edn~:
+Merge the search results into the current project's ~deps.edn~. You can also
+*save* these results to deps.edn by specifying ~:save~ instead.
 
 #+BEGIN_SRC sh
-clj -A:find-deps -F:merged http-kit tools.logging priority-map
+clj -A:find-deps -F:merge http-kit tools.logging priority-map
 #+END_SRC
 
 #+BEGIN_SRC clojure
@@ -112,8 +123,6 @@ clj -A:find-deps -F:merged http-kit tools.logging priority-map
   http-kit/http-kit             {:mvn/version "2.3.0"}}
 ;; ... snip
  }
-
-
 #+END_SRC
 
 String search returning multiple matches in a table:
@@ -163,7 +172,7 @@ See the ~find-deps.core~ namespace for more helpers.
   - [ ] page rank deps based on dependency graph
   - [ ] recommended other dependencies based on clustering
 - [ ] incorporate download counts into weighting factor
-- [ ] support writing directly into deps.edn
+- [x] support writing directly into deps.edn
 - [ ] support ~add-lib~
 - [ ] add validation support to cli parser
 
