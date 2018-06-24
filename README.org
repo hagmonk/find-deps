@@ -38,7 +38,7 @@ To use *find-deps* from the command line, create an alias in your
 
 #+BEGIN_SRC clojure
 :find-deps {:extra-deps {find-deps {:git/url "https://github.com/hagmonk/find-deps"
-                                    :sha     "7abc8bba589955fce702b3c87fa28f7a61533ba5"}}
+                                    :sha     "682525ee1874f186668bfb3884c72e0252d77771"}}
             :main-opts  ["-m" "find-deps.core"]}
 #+END_SRC
 
@@ -53,7 +53,7 @@ Usage: [options*] [search-strings*]
 Options:
   -s, --sources SOURCES  :clojars:mvn  Concatenated source types
   -R, --rank METHOD      :fuzzy        Ranking method - :fuzzy, :regex
-  -F, --format FORMAT    :deps         Format for printing results - :deps, :merge, :table, :save
+  -F, --format FORMAT    :deps         Format for printing results - :deps, :merge, :table, :save, :cli
   -l, --limit NUM        1             Limit per-search results to NUM
   -h, --help
 #+END_SRC
@@ -144,6 +144,12 @@ clj -A:find-deps -F:table -l 10 "apache kafka"
 | org.apache.kafka/kafka-perf_2.8.0 |  0.8.1.1 |
 #+END_SRC
 
+Print out a command line invocation of the deps:
+
+#+BEGIN_SRC sh
+clj -A:find-deps -F:cli http-kit jsonista
+clojure -Sdeps '{:deps {http-kit/http-kit {:mvn/version "2.3.0"}, metosin/jsonista {:mvn/version "0.2.1"}}}'
+#+END_SRC
 *** API
 
 The ~find-deps.core~ namespace contains a number of helpers you can use from the
