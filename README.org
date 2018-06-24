@@ -23,6 +23,10 @@ clj -A:find-deps -F:save priority-map
 #+END_SRC
 
 *** Changelog
+- 2018-06-23
+  - fixed bug wherein it wasn't possible to save deps without a preexisting
+    deps.edn
+  - added -F:cli format flag to print deps as command line option to `clojure` binary
 - 2018-06-17
   - change -S flag to -s to avoid conflict with tools.deps cli
   - enable piping of invocations together to produced merged deps.edn map
