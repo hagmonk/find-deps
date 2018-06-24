@@ -41,7 +41,9 @@
 (defn get-deps-edn-file
   ([] (get-deps-edn-file "deps.edn"))
   ([path]
-   (clojure.edn/read-string (slurp path))))
+   (try
+     (clojure.edn/read-string (slurp path))
+     (catch Throwable _ {:deps {}}))))
 
 (defn write-deps-edn
   [deps stream]
@@ -152,7 +154,12 @@
                new-deps)
       :table (clojure.pprint/print-table
               (map (fn [[k v]]
-                     {:lib k :version (:mvn/version v)}) deps)))))
+                     {:lib k :version (:mvn/version v)}) deps))
+      :cli  (print (str/join " "
+                             ["clojure" "-Sdeps"
+                              (str "'" (merge-with merge
+                                                   (get-deps-edn-stream)
+                                                   {:deps (into {} deps)}) "'")])))))
 
 (defn query*
   "Perform query"
@@ -238,7 +245,7 @@
       (exit (if ok? 0 1) exit-message)
       (binding [*print-namespace-maps* false]
         (let [result (apply query* (conj (vec search-strings) options))]
-          (when-not (some-> options :format #{:table})
+          (when-not (some-> options :format #{:table :cli})
             (write-deps-edn result *out*)))))
     (shutdown-agents)
     (flush)))
