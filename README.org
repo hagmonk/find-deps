@@ -23,6 +23,10 @@ clj -A:find-deps -F:save priority-map
 #+END_SRC
 
 *** Changelog
+- 2018-06-25
+  - hide snapshot versions by default in clojars (fixes #2)
+- 2018-06-24
+  - merged @pesterhazy's README fix
 - 2018-06-23
   - fixed bug wherein it wasn't possible to save deps without a preexisting
     deps.edn

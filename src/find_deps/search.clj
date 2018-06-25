@@ -13,13 +13,20 @@
 
 (defmulti coerce (fn [service result] service))
 
+(defn http-helper
+  ([url]
+   (http-helper url {}))
+  ([url query]
+   (-> url
+       (http/get {:query-params query})
+       deref
+       :body
+       (json/read-value (json/object-mapper {:decode-key-fn (comp keyword hyphenate)})))))
+
 (defmethod search :mvn
   [_ text]
   (-> "https://search.maven.org/solrsearch/select"
-      (http/get {:query-params {:q text :rows 20 :wt "json"}})
-      deref
-      :body
-      (json/read-value (json/object-mapper {:decode-key-fn (comp keyword hyphenate)}))
+      (http-helper {:q text :rows 20 :wt "json"})
       :response
       :docs))
 
@@ -42,14 +49,37 @@
                                        :g :group
                                        :latest-version :version}))))
 
+(defn patch-clojars-snapshots
+  "Given a clojars map, if the version supplied is a snapshot, attempt to find the
+  latest release version rather than the snapshot."
+  [{:keys [jar-name group-name version] :as ctx}]
+  (or (when (re-find #"-SNAPSHOT" version)
+        (when-let [latest-release (some-> (format "https://clojars.org/api/artifacts/%s/%s" group-name jar-name)
+                                          http-helper
+                                          :latest-release)]
+          (assoc ctx :version latest-release)))
+      ctx))
+
+(comment
+  (patch-clojars-snapshots {:description "A simple ClojureScript interface to React",
+                            :created "1527436309000",
+                            :jar-name "reagent",
+                            :group-name "reagent",
+                            :version "0.8.2-SNAPSHOT"}))
+
+;; swap :version  to :latest-version
+;; :jar-name "reagent",
+;; :group-name "reagent"
+
 (defmethod search :clojars
   [_ text]
-  (-> "https://clojars.org/search"
-      (http/get {:query-params {:q text :format "json"}})
-      deref
-      :body
-      (json/read-value (json/object-mapper {:decode-key-fn (comp keyword hyphenate)}))
-      :results))
+  (pmap patch-clojars-snapshots
+        (-> "https://clojars.org/search"
+            (http/get {:query-params {:q text :format "json"}})
+            deref
+            :body
+            (json/read-value (json/object-mapper {:decode-key-fn (comp keyword hyphenate)}))
+            :results)))
 
 ;; (first (search :clojars "http-kit"))
 ;;   {:description "HTTP Kit adapter for Luminus",
@@ -94,12 +124,25 @@
   (time (query "priority-map" #{:mvn :clojars}))
   (time (query "pedestal/interceptors" #{:mvn :clojars}))
 
+  (time (query "reagent" #{:mvn :clojars}))
+
+  (first (filter (comp #(re-find #"SNAPSHOT" %) :version) (search :clojars "reagent")))
+  
+
+  (filter (comp #{"reagent"} :artifact) (query "reagent" #{:mvn :clojars}))
 
   (-> "https://clojars.org/search"
-      (http/get {:query-params {:q "clojure" :format "json"}})
+      (http/get {:query-params {:q "reagent" :format "json"}})
       deref
       :body
-      (json/read-value (json/object-mapper {:decode-key-fn (comp keyword hyphenate)}))
-      )
+      (json/read-value (json/object-mapper {:decode-key-fn (comp keyword hyphenate)})))
+
+  "https://clojars.org/api/artifacts/cljsjs/react"
+
+  (-> "https://clojars.org/api/artifacts/reagent/reagent"
+      (http/get {:query-params {:q "reagent" :format "json"}})
+      deref
+      :body
+      (json/read-value (json/object-mapper {:decode-key-fn (comp keyword hyphenate)})))
   
   (count (search :clojars "clojure")))
