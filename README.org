@@ -23,6 +23,7 @@ clj -A:find-deps -F:save priority-map
 #+END_SRC
 
 *** Changelog
+- Note taken on [2018-06-25 Mon 10:39]
 - 2018-06-25
   - hide snapshot versions by default in clojars (fixes #2)
 - 2018-06-24
@@ -48,7 +49,7 @@ To use *find-deps* from the command line, create an alias in your
 {:aliases {:find-deps {:extra-deps
                          {find-deps
                             {:git/url "https://github.com/hagmonk/find-deps",
-                             :sha "682525ee1874f186668bfb3884c72e0252d77771"}},
+                             :sha "6fc73813aafdd2288260abb2160ce0d4cdbac8be"}},
                        :main-opts ["-m" "find-deps.core"]}}}
 #+END_SRC
 
