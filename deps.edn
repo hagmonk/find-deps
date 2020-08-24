@@ -3,7 +3,7 @@
          metosin/jsonista     {:mvn/version "0.1.1"}
          inflections          {:mvn/version "0.13.0"}
          clj-fuzzy            {:mvn/version "0.4.1"}
-         http-kit             {:mvn/version "2.3.0"}
+         http-kit             {:mvn/version "2.4.0"}
          tools.deps.alpha       {:git/url "https://github.com/clojure/tools.deps.alpha"
                                  :sha     "884d7ae5b9c228ff795e4385291708102f1cd46d"}
          org.clojure/spec.alpha {:mvn/version "0.1.143"}
